@@ -1,16 +1,19 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 using CatAList.Services;
-using System.IO;
 
 namespace CatAList.Test
 {
     public class AppTest
     {
+        private Mock<ILogger<App>> logger;
         private Mock<ICatService> catServiceMock;
         private App app;
         private StringWriter outputWriter;
@@ -19,10 +22,11 @@ namespace CatAList.Test
 
         public AppTest()
         {
+            logger = new Mock<ILogger<App>>();
             catServiceMock = new Mock<ICatService>();
             outputWriter = new StringWriter();
             inputReader = new StringReader(input);
-            app = new App(catServiceMock.Object, outputWriter, inputReader);
+            app = new App(logger.Object, catServiceMock.Object, outputWriter, inputReader);
         }
 
         [Fact]
@@ -105,6 +109,24 @@ namespace CatAList.Test
                 + "Female" + Environment.NewLine
                 + App.PetNamePointer + "Chester" + Environment.NewLine
                 + App.PetNamePointer + "Sam" + Environment.NewLine
+                + Environment.NewLine
+                + App.PressAnyKeyToContinue + Environment.NewLine;
+            Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public void RunAsync_ReceivesException_ReturnsUnexpectedErrorText()
+        {
+            // Arrange
+            catServiceMock.Setup(m => m.GetCatNamesGroupedByOwnerGendersAsync())
+                .Throws(new HttpRequestException());
+
+            // Act
+            app.RunAsync().Wait();
+            var result = outputWriter.ToString();
+
+            // Assert
+            var expected = App.UnexpectedErrorText + Environment.NewLine
                 + Environment.NewLine
                 + App.PressAnyKeyToContinue + Environment.NewLine;
             Assert.Equal(expected, result);

@@ -45,7 +45,6 @@ namespace CatAList
         {
             // Configure logger and add to services
             var loggerFactory = new LoggerFactory()
-                .AddConsole()
                 .AddDebug();        
             services.AddSingleton(loggerFactory);
             services.AddLogging();
